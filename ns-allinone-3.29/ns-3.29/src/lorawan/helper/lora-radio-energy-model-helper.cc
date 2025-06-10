@@ -98,6 +98,7 @@ LoraRadioEnergyModelHelper::DoInstall (Ptr<NetDevice> device,
 
   if (m_txCurrentModel.GetTypeId ().GetUid ())
     {
+
       Ptr<LoraTxCurrentModel> txcurrent = m_txCurrentModel.Create<LoraTxCurrentModel> ();
       model->SetTxCurrentModel (txcurrent);
     }

@@ -80,7 +80,7 @@ EndDeviceLoraMac::EndDeviceLoraMac ()
   : m_enableDRAdapt (false),
   m_maxNumbTx (8),
   m_dataRate (0),
-  m_txPower (14),
+  m_txPower (12),
   m_codingRate (1),
   // LoraWAN default
   m_headerDisabled (0),
@@ -164,6 +164,7 @@ EndDeviceLoraMac::Send (Ptr<Packet> packet)
 
   // Pick a channel on which to transmit the packet
   Ptr<LogicalLoraChannel> txChannel = GetChannelForTx ();
+  // std::cout << "(end-device-lora-mac.cc) channel: " << txChannel << std::endl;
 
   if (!(txChannel && m_retxParams.retxLeft > 0))
     {
@@ -316,6 +317,8 @@ EndDeviceLoraMac::SendToPhy (Ptr<Packet> packetToSend)
   Ptr<LogicalLoraChannel> txChannel = GetChannelForTx ();
 
   NS_LOG_DEBUG ("PacketToSend: " << packetToSend);
+// TODO verificar isso aqi
+  NS_LOG_DEBUG ("TxPower: " << m_txPower);
   m_phy->Send (packetToSend, params, txChannel->GetFrequency (), m_txPower);
 
   //////////////////////////////////////////////
@@ -993,14 +996,6 @@ EndDeviceLoraMac::SetSf (uint8_t sf)
   m_sf = sf;
 }
 
-uint8_t
-EndDeviceLoraMac::GetSf (void)
-{
-  NS_LOG_FUNCTION (this);
-
-  return m_sf;
-}
-
 void
 EndDeviceLoraMac::SetDeviceAddress (LoraDeviceAddress address)
 {
@@ -1128,8 +1123,8 @@ EndDeviceLoraMac::OnLinkAdrReq (uint8_t dataRate, uint8_t txPower,
 
       // Set the data rate
       m_dataRate = dataRate;
-
-      // Set the transmission power
+// TODO descomentar a linha abaixo
+//      // Set the transmission power
       m_txPower = GetDbmForTxPower (txPower);
     }
 
@@ -1302,6 +1297,14 @@ EndDeviceLoraMac::AddMacCommand (Ptr<MacCommand> macCommand)
 
   m_macCommandList.push_back (macCommand);
 }
+
+//TODO ONDE TA
+void
+EndDeviceLoraMac::SetTransmissionPower (uint8_t txPowerdBm)
+{
+  m_txPower = txPowerdBm;
+}
+
 
 uint8_t
 EndDeviceLoraMac::GetTransmissionPower (void)

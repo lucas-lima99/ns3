@@ -95,6 +95,12 @@ LoraPhy::SetDevice (Ptr<NetDevice> device)
   m_device = device;
 }
 
+// Ptr<NetDevice>
+// LoraPhy::GetChannelDevice (void) const
+// {
+//   return m_device;
+// }
+
 Ptr<LoraChannel>
 LoraPhy::GetChannel (void) const
 {

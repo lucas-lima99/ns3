@@ -20,6 +20,7 @@
 
 #include "ns3/lora-mac-helper.h"
 #include "ns3/gateway-lora-phy.h"
+#include "ns3/lora-phy-helper.h"
 #include "ns3/end-device-lora-phy.h"
 #include "ns3/lora-net-device.h"
 #include "ns3/log.h"
@@ -238,11 +239,12 @@ LoraMacHelper::ApplyCommonEuConfigurations (Ptr<LoraMac> loraMac) const
 }
 void LoraMacHelper::SetSpreadingFactorsUp (NodeContainer endDevices, NodeContainer gateways, Ptr<LoraChannel> channel){
   int algoritmo=1;
-  double targetRealocation = 1;
-  SetSpreadingFactorsUp (endDevices,gateways,channel,algoritmo,targetRealocation);
+  int txPowerdBm=14;
+  SetSpreadingFactorsUp (endDevices,gateways,channel,algoritmo, txPowerdBm);
 }
 
-void LoraMacHelper::SetSpreadingFactorsUp (NodeContainer endDevices, NodeContainer gateways, Ptr<LoraChannel> channel,int algoritmo, double targetRealocation){
+void LoraMacHelper::SetSpreadingFactorsUp(NodeContainer endDevices, NodeContainer gateways, Ptr<LoraChannel> channel,int algoritmo,
+ int txPowerdBm){
   NS_LOG_FUNCTION_NOARGS ();
 
   
@@ -250,6 +252,13 @@ void LoraMacHelper::SetSpreadingFactorsUp (NodeContainer endDevices, NodeContain
   std::vector<int> order(endDevices.GetN(),0);
   int cont = 0,aux;
   double auxD;
+  // LoraPhyHelper phyHelper = LoraPhyHelper ();
+  // phyHelper.SetChannel (channel);
+  // phyHelper.SetDeviceType (LoraPhyHelper::ED);
+  // phyHelper.SetDeviceType (LoraPhyHelper::GW);
+
+
+
   for (NodeContainer::Iterator j = endDevices.Begin (); j != endDevices.End (); ++j)
     {
       Ptr<Node> object = *j;
@@ -260,13 +269,15 @@ void LoraMacHelper::SetSpreadingFactorsUp (NodeContainer endDevices, NodeContain
       NS_ASSERT (loraNetDevice != 0);
       Ptr<EndDeviceLoraMac> mac = loraNetDevice->GetMac ()->GetObject<EndDeviceLoraMac> ();
       NS_ASSERT (mac != 0);
+      // Ptr<LoraPhy> phy = loraNetDevice->GetPhy();
 
+      // channel = phy->GetChannel();
       // Try computing the distance from each gateway and find the best one
       Ptr<Node> bestGateway = gateways.Get (0);
       Ptr<MobilityModel> bestGatewayPosition = bestGateway->GetObject<MobilityModel> ();
 
-      // Assume devices transmit at 14 dBm
-      double highestRxPower = channel->GetRxPower (14, position, bestGatewayPosition);
+      // Assume devices transmit at txPowerdBm dBm
+      double highestRxPower = channel->GetRxPower (txPowerdBm, position, bestGatewayPosition);
 
       for (NodeContainer::Iterator currentGw = gateways.Begin () + 1;
            currentGw != gateways.End (); ++currentGw)
@@ -274,7 +285,7 @@ void LoraMacHelper::SetSpreadingFactorsUp (NodeContainer endDevices, NodeContain
           // Compute the power received from the current gateway
           Ptr<Node> curr = *currentGw;
           Ptr<MobilityModel> currPosition = curr->GetObject<MobilityModel> ();
-          double currentRxPower = channel->GetRxPower (14, position, currPosition);    // dBm
+          double currentRxPower = channel->GetRxPower (txPowerdBm, position, currPosition);    // dBm
 
           if (currentRxPower > highestRxPower)
             {
@@ -290,12 +301,14 @@ void LoraMacHelper::SetSpreadingFactorsUp (NodeContainer endDevices, NodeContain
       order[cont]=cont;
       cont++;
       Ptr<UniformRandomVariable> x = CreateObject<UniformRandomVariable> ();
-      //std::cout <<x->GetInteger(7,12)<<std::endl;
+      // std::cout <<x->GetInteger(7,12)<<std::endl;
       mac->SetSf(x->GetInteger(7,12));
+      // std::cout << "mac: " << mac << std::endl;
 
       // Get the ED sensitivity
       Ptr<EndDeviceLoraPhy> edPhy = loraNetDevice->GetPhy ()->GetObject<EndDeviceLoraPhy> ();
       const double *edSensitivity = edPhy->sensitivity;
+
 
       if (rxPower > *edSensitivity)
         {
@@ -357,43 +370,102 @@ void LoraMacHelper::SetSpreadingFactorsUp (NodeContainer endDevices, NodeContain
       NS_ASSERT (loraNetDevice != 0);
       Ptr<EndDeviceLoraMac> mac = loraNetDevice->GetMac ()->GetObject<EndDeviceLoraMac> ();
       NS_ASSERT (mac != 0);
-        
+      //std::cout << "valor de endDevices.GetN é: " << endDevices.GetN();
+      // Ptr<LoraPhy> phy = loraNetDevice->GetPhy();
+      // std::cout << "phy: " << phy << std::endl;
 
+      // channel = phy->GetChannel();
+      // std::cout << "-----"  << std::endl;
+
+      // std::cout << "channel: " << channel << std::endl;
+      // std::cout<< "Tamanho do canal: " << channel->GetNDevices() << std::endl;
+
+      Ptr<Node> bestGateway = gateways.Get (0);
+      Ptr<MobilityModel> bestGatewayPosition = bestGateway->GetObject<MobilityModel> ();
+      double highestRxPower = channel->GetRxPower (txPowerdBm, position, bestGatewayPosition);
+      // std::cout << "highestRxPower : " << highestRxPower << std::endl;
       // Get the ED sensitivity
       Ptr<EndDeviceLoraPhy> edPhy = loraNetDevice->GetPhy ()->GetObject<EndDeviceLoraPhy> ();
       const double *edSensitivity = edPhy->sensitivity;
-      // (I) Fixed at the lowest SF
-      if(algoritmo==1){
-        mac->SetSf(7);
 
-      }
-      //(II)  Fixed  at  the  highest  SF
-      else if(algoritmo==2){
-    	  mac->SetSf(12);
-      }
-      // (III)  Equally  divided
-      else if(algoritmo==3){
-        if(i<(1*endDevices.GetN())/6){
+      // // (I)Fixed at SF 7
+      // if(algoritmo==1){
+      //   mac->SetSf(7);
+
+      // }
+      // (I) Arbitrarily divided - Capacity enhancement sensitivity based (a= {0.6,0.15,0.05,0.1,0.05,0.05})
+      if(algoritmo==100){
+        if(i<(6*endDevices.GetN())/10){
           mac->SetSf(7);
         }
-        else if(i<(2*endDevices.GetN())/6){
+        else if(i<(7.5*endDevices.GetN())/10){
           mac->SetSf(8);
         }
-        else if(i<(3*endDevices.GetN())/6){
+        else if(i<(8.0*endDevices.GetN())/10){
           mac->SetSf(9);
         }
-        else if(i<(4*endDevices.GetN())/6){
+        else if(i<(9.0*endDevices.GetN())/10){
           mac->SetSf(10);
         }
-        else if(i<(5*endDevices.GetN())/6){
+        else if(i<(9.5*endDevices.GetN())/10){
           mac->SetSf(11);
         }
         else{
           mac->SetSf(12);
-        }
       }
+
+     }
+
+      // (II) Fixed at SF 12
+      // else if(algoritmo==2){
+    	//   mac->SetSf(12);
+      // }
+
+     // (I) Arbitrarily divided - Capacity enhancement (a= {0.65,0.1,0.05,0.1,0.05,0.05})
+      else if(algoritmo==1){
+              if(i<(6.5*endDevices.GetN())/10){
+                mac->SetSf(7);
+              }
+              else if(i<(7.5*endDevices.GetN())/10){
+                mac->SetSf(8);
+              }
+              else if(i<(8*endDevices.GetN())/10){
+                mac->SetSf(9);
+              }
+              else if(i<(9*endDevices.GetN())/10){
+                mac->SetSf(10);
+              }
+              else if(i<(9.5*endDevices.GetN())/10){
+                mac->SetSf(11);
+              }
+              else{
+                mac->SetSf(12);
+              }
+            }
+
+      // (III) Arbitrarily divided - Capacity enhancement (a= {0.7,0.1,0.1,0.05,0.04,0.01})
+      else if(algoritmo==2){
+              if(i<(7*endDevices.GetN())/10){
+                mac->SetSf(7);
+              }
+              else if(i<(8*endDevices.GetN())/10){
+                mac->SetSf(8);
+              }
+              else if(i<(9*endDevices.GetN())/10){
+                mac->SetSf(9);
+              }
+              else if(i<(9.5*endDevices.GetN())/10){
+                mac->SetSf(10);
+              }
+              else if(i<(9.9*endDevices.GetN())/10){
+                mac->SetSf(11);
+              }
+              else{
+                mac->SetSf(12);
+              }
+            }
       // (IV) Arbitrarily divided - Capacity enhancement (a= {0.6,0.2,0.05,0.05,0.05,0.05})
-      else if(algoritmo==4){
+      else if(algoritmo==3){
         if(i<(6*endDevices.GetN())/10){
           mac->SetSf(7);
         }
@@ -413,165 +485,267 @@ void LoraMacHelper::SetSpreadingFactorsUp (NodeContainer endDevices, NodeContain
           mac->SetSf(12);
         }
       }
-      // (V) Arbitrarily divided - Coverage enhancement (a={0.05,0.05,0.05,0.05,0.2,0.6})
-      else if(algoritmo==5){
-        if(i<(0.5*endDevices.GetN())/10){
-          mac->SetSf(7);
-        }
-        else if(i<(1.0*endDevices.GetN())/10){
-          mac->SetSf(8);
-        }
-        else if(i<(1.5*endDevices.GetN())/10){
-          mac->SetSf(9);
-        }
-        else if(i<(2.0*endDevices.GetN())/10){
-          mac->SetSf(10);
-        }
-        else if(i<(4.0*endDevices.GetN())/10){
-          mac->SetSf(11);
-        }
-        else{
-          mac->SetSf(12);
-        }
-      }
-      // (VI) Sensitivity based
-      else if(algoritmo==6){
+
+      // (V) Sensitivity based
+      else if(algoritmo==4){
         mac->SetSf(mac->GetSfFromDataRate(mac->GetDataRate()));
       }
-      // (VII) Sensitivity based arbitrarily divided - Capacity enhancement (a= {0.6,0.2,0.05,0.05,0.05,0.05})
-      else if(algoritmo==7){
-        if(i<(6*endDevices.GetN())/10 && rxPowerAll[order[i]] > *edSensitivity ){
-          mac->SetSf(7);
-        }
-        else if(i<(8*endDevices.GetN())/10  && rxPowerAll[order[i]] > *(edSensitivity + 1)){
-          mac->SetSf(8);
-        }
-        else if(i<(8.5*endDevices.GetN())/10  && rxPowerAll[order[i]] > *(edSensitivity + 2)){
-          mac->SetSf(9);
-        }
-        else if(i<(9*endDevices.GetN())/10  && rxPowerAll[order[i]] > *(edSensitivity + 3)){
-          mac->SetSf(10);
-        }
-        else if(i<(9.5*endDevices.GetN())/10  && rxPowerAll[order[i]] > *(edSensitivity + 4)){
-          mac->SetSf(11);
-        }
-        else{
-          mac->SetSf(12);
-        }
-      }
-      // (VIII) Sensitivity based arbitrarily divided - Coverage enhancement (a={0.05,0.05,0.05,0.05,0.2,0.6})
-      else if(algoritmo==8){
+
+      //(VII) Sensitivity based arbitrarily divided - Coverage enhancement (a={0.05,0.05,0.15,0.05,0.2,0.5})
+      else if(algoritmo==600){
         if(i<(0.5*endDevices.GetN())/10 && rxPowerAll[order[i]] > *edSensitivity ){
           mac->SetSf(7);
         }
         else if(i<(1.0*endDevices.GetN())/10  && rxPowerAll[order[i]] > *(edSensitivity + 1)){
           mac->SetSf(8);
         }
-        else if(i<(1.5*endDevices.GetN())/10  && rxPowerAll[order[i]] > *(edSensitivity + 2)){
+        else if(i<(2.5*endDevices.GetN())/10  && rxPowerAll[order[i]] > *(edSensitivity + 2)){
           mac->SetSf(9);
         }
-        else if(i<(2.0*endDevices.GetN())/10  && rxPowerAll[order[i]] > *(edSensitivity + 3)){
+        else if(i<(3.0*endDevices.GetN())/10  && rxPowerAll[order[i]] > *(edSensitivity + 3)){
           mac->SetSf(10);
         }
-        else if(i<(4.0*endDevices.GetN())/10  && rxPowerAll[order[i]] > *(edSensitivity + 4)){
+        else if(i<(5.0*endDevices.GetN())/10  && rxPowerAll[order[i]] > *(edSensitivity + 4)){
           mac->SetSf(11);
         }
         else{
           mac->SetSf(12);
         }
       }
-      // (IX) Random assignment
-      else if(algoritmo==9){
+
+      //(VII) Equally divided
+      else if(algoritmo==5){
+        if(i<(1*endDevices.GetN())/6){
+          mac->SetSf(7);
+        }
+        else if(i<(2*endDevices.GetN())/6){
+          mac->SetSf(8);
+        }
+        else if(i<(3*endDevices.GetN())/6){
+          mac->SetSf(9);
+        }
+        else if(i<(4*endDevices.GetN())/6){
+          mac->SetSf(10);
+        }
+        else if(i<(5*endDevices.GetN())/6){
+          mac->SetSf(11);
+        }
+        else{
+          mac->SetSf(12);
+        }
+      }
+
+      // (VIII) Arbitrarily divided - Capacity enhancement (a= {0.05,0.1,0.2,0.2,0.25,0.2})
+            else if(algoritmo==6){
+              if(i<(0.5*endDevices.GetN())/10){
+                mac->SetSf(7);
+              }
+              else if(i<(1.5*endDevices.GetN())/10){
+                mac->SetSf(8);
+              }
+              else if(i<(3.5*endDevices.GetN())/10){
+                mac->SetSf(9);
+              }
+              else if(i<(5.5*endDevices.GetN())/10){
+                mac->SetSf(10);
+              }
+              else if(i<(8*endDevices.GetN())/10){
+                mac->SetSf(11);
+              }
+              else{
+                mac->SetSf(12);
+              }
+            }
+      // (IX) Arbitrarily divided - Capacity enhancement (a= {0.05,0.1,0.1,0.1,0.25,0.40})
+      else if(algoritmo==7){
+              if(i<(0.5*endDevices.GetN())/10){
+                mac->SetSf(7);
+              }
+              else if(i<(1.5*endDevices.GetN())/10){
+                mac->SetSf(8);
+              }
+              else if(i<(2.5*endDevices.GetN())/10){
+                mac->SetSf(9);
+              }
+              else if(i<(3.5*endDevices.GetN())/10){
+                mac->SetSf(10);
+              }
+              else if(i<(6.0*endDevices.GetN())/10){
+                mac->SetSf(11);
+              }
+              else{
+                mac->SetSf(12);
+              }
+            }
+
+      // (X) Random assignment
+      else if(algoritmo==10){
         Ptr<UniformRandomVariable> x = CreateObject<UniformRandomVariable> ();
         mac->SetSf(x->GetInteger(7,12));
       }
-      // (X) Sensitivity algorithm with reallocation
-      else if(algoritmo==10){
-    	// Perform sensitivity algorithm
-        mac->SetSf(mac->GetSfFromDataRate(mac->GetDataRate()));
-        // Perform realocation
-        if(i<(targetRealocation*endDevices.GetN()/100) && mac->GetSf() > 7 ){
-          mac->SetSf(mac->GetSf()-1);
-        }
-      }
+
+//      else if(algoritmo==10){
+//    	// Perform sensitivity algorithm
+//        mac->SetSf(mac->GetSfFromDataRate(mac->GetDataRate()));
+//        // Perform realocation
+//        if(i<(targetRealocation*endDevices.GetN()/100) && mac->GetSf() > 7 ){
+//          mac->SetSf(mac->GetSf()-1);
+//        }
+//      }
+      // // (X) Coverage based on energy consumption and sensitivity  (a={0.05,0.05,0.1,0.2,0.5,0.1})
+      //     else if(algoritmo==10){
+      //         if(i<(0.5*endDevices.GetN())/10 && rxPowerAll[order[i]] > *edSensitivity ){
+      //           mac->SetSf(7);
+      //         }
+      //         else if(i<(1.0*endDevices.GetN())/10  && rxPowerAll[order[i]] > *(edSensitivity + 1)){
+      //           mac->SetSf(8);
+      //         }
+      //         else if(i<(2.0*endDevices.GetN())/10  && rxPowerAll[order[i]] > *(edSensitivity + 2)){
+      //           mac->SetSf(9);
+      //         }
+      //         else if(i<(4.0*endDevices.GetN())/10  && rxPowerAll[order[i]] > *(edSensitivity + 3)){
+      //           mac->SetSf(10);
+      //         }
+      //         else if(i<(9.0*endDevices.GetN())/10  && rxPowerAll[order[i]] > *(edSensitivity + 4)){
+      //           mac->SetSf(11);
+      //         }
+      //         else{
+      //           mac->SetSf(12);
+      //         }
+      //       }
+
+      // (XI) Coverage based on energy consumption
+           else if(algoritmo==11){
+         	  if(i<(0.5*endDevices.GetN())/10){
+         		  mac->SetSf(7);
+                   }
+               else if(i<(1.0*endDevices.GetN())/10){
+             	  mac->SetSf(8);
+                   }
+               else if(i<(2.0*endDevices.GetN())/10){
+             	  mac->SetSf(9);
+                   }
+               else if(i<(4.0*endDevices.GetN())/10){
+             	  mac->SetSf(10);
+                   }
+               else if(i<(9.0*endDevices.GetN())/10){
+             	  mac->SetSf(11);
+                   }
+               else{
+             	  mac->SetSf(12);
+                   }
+           }
+
+      // (XII) Sensitivity based equal split  (a={0.16,0.16,0.16,0.16,0.16,0.16})
+          else if(algoritmo==12){
+              if(i<(1.0*endDevices.GetN())/6 && rxPowerAll[order[i]] > *edSensitivity ){
+                mac->SetSf(7);
+              }
+              else if(i<(2.0*endDevices.GetN())/6  && rxPowerAll[order[i]] > *(edSensitivity + 1)){
+                mac->SetSf(8);
+              }
+              else if(i<(3.0*endDevices.GetN())/6  && rxPowerAll[order[i]] > *(edSensitivity + 2)){
+                mac->SetSf(9);
+              }
+              else if(i<(4.0*endDevices.GetN())/6  && rxPowerAll[order[i]] > *(edSensitivity + 3)){
+                mac->SetSf(10);
+              }
+              else if(i<(5.0*endDevices.GetN())/6  && rxPowerAll[order[i]] > *(edSensitivity + 4)){
+                mac->SetSf(11);
+              }
+              else{
+                mac->SetSf(12);
+              }
+            }
+
+      // (XIII) Sensitivity based equal split  (a={0.20,0.20,0.20,0.20,0.10,0.10})
+         else if(algoritmo==13){
+        	 if(i<(2.0*endDevices.GetN())/10 && rxPowerAll[order[i]] > *edSensitivity ){
+        		 mac->SetSf(7);
+                    }
+        	 else if(i<(4.0*endDevices.GetN())/10  && rxPowerAll[order[i]] > *(edSensitivity + 1)){
+        		 mac->SetSf(8);
+                    }
+             else if(i<(6.0*endDevices.GetN())/10  && rxPowerAll[order[i]] > *(edSensitivity + 2)){
+                 mac->SetSf(9);
+                    }
+             else if(i<(8.0*endDevices.GetN())/10  && rxPowerAll[order[i]] > *(edSensitivity + 3)){
+            	 mac->SetSf(10);
+                    }
+             else if(i<(59.0*endDevices.GetN())/10  && rxPowerAll[order[i]] > *(edSensitivity + 4)){
+            	 mac->SetSf(11);
+                    }
+             else{
+            	 mac->SetSf(12);
+                     }
+                  }
+
+            // (XIV) Arbitrarily divided - Capacity enhancement (a= {0.65,0.1,0.05,0.1,0.05,0.05})
+            else if(algoritmo==14){
+              if(i<(6.5*endDevices.GetN())/10){
+                mac->SetSf(7);
+              }
+              else if(i<(7.5*endDevices.GetN())/10){
+                mac->SetSf(8);
+              }
+              else if(i<(8*endDevices.GetN())/10){
+                mac->SetSf(9);
+              }
+              else if(i<(9*endDevices.GetN())/10){
+                mac->SetSf(10);
+              }
+              else if(i<(9.5*endDevices.GetN())/10){
+                mac->SetSf(11);
+              }
+              else{
+                mac->SetSf(12);
+              }
+            }
+            // (XV) Arbitrarily divided - Capacity enhancement (a= {0.7,0.1,0.1,0.05,0.04,0.01})
+            else if(algoritmo==15){
+              if(i<(7*endDevices.GetN())/10){
+                mac->SetSf(7);
+              }
+              else if(i<(8*endDevices.GetN())/10){
+                mac->SetSf(8);
+              }
+              else if(i<(9*endDevices.GetN())/10){
+                mac->SetSf(9);
+              }
+              else if(i<(9.5*endDevices.GetN())/10){
+                mac->SetSf(10);
+              }
+              else if(i<(9.9*endDevices.GetN())/10){
+                mac->SetSf(11);
+              }
+              else{
+                mac->SetSf(12);
+              }
+            }
+            
+
+            // (II) Fixed at SF 7
+            else if(algoritmo==27){
+          	  mac->SetSf(7);
+            }
+            else if(algoritmo==28){
+            	mac->SetSf(8);
+                      }
+            else if(algoritmo==29){
+            	mac->SetSf(9);
+                      }
+            else if(algoritmo==30){
+            	mac->SetSf(10);
+                      }
+            else if(algoritmo==31){
+            	mac->SetSf(11);
+                      }
+            else if(algoritmo==32){
+            	mac->SetSf(12);
+                      }
       else{
       }
-    }
-    /*    if(i<(6*endDevices.GetN())/10){
-      mac->SetSf(7);
-    }
-    else if(i<(8*endDevices.GetN())/10){
-      mac->SetSf(8);
-    }
-    else if(i<(8.5*endDevices.GetN())/10){
-      mac->SetSf(9);
-    }
-    else if(i<(9*endDevices.GetN())/10){
-      mac->SetSf(10);
-    }
-    else if(i<(9.5*endDevices.GetN())/10){
-      mac->SetSf(11);
-    }
-    else{
-      mac->SetSf(12);
 
-    }
-    
-
-
-
-
-
-    if(i<(1*endDevices.GetN())/6){
-      mac->SetSf(7);
-    }
-    else if(i<(2*endDevices.GetN())/6){
-      mac->SetSf(8);
-    }
-    else if(i<(3*endDevices.GetN())/6){
-      mac->SetSf(9);
-    }
-    else if(i<(4*endDevices.GetN())/6){
-      mac->SetSf(10);
-    }
-    else if(i<(5*endDevices.GetN())/6){
-      mac->SetSf(11);
-    }
-    else{
-      mac->SetSf(12);
-
-    }
-
-
-
-
-
-    // Get the ED sensitivity
-    Ptr<EndDeviceLoraPhy> edPhy = loraNetDevice->GetPhy ()->GetObject<EndDeviceLoraPhy> ();
-    const double *edSensitivity = edPhy->sensitivity;
-
-
-
-    if(i<(6*endDevices.GetN())/10 && rxPowerAll[order[i]] > *edSensitivity ){
-      mac->SetSf(7);
-    }
-    else if(i<(8*endDevices.GetN())/10  && rxPowerAll[order[i]] > *(edSensitivity + 1)){
-      mac->SetSf(8);
-    }
-    else if(i<(8.5*endDevices.GetN())/10  && rxPowerAll[order[i]] > *(edSensitivity + 2)){
-      mac->SetSf(9);
-    }
-    else if(i<(9*endDevices.GetN())/10  && rxPowerAll[order[i]] > *(edSensitivity + 3)){
-      mac->SetSf(10);
-    }
-    else if(i<(9.5*endDevices.GetN())/10  && rxPowerAll[order[i]] > *(edSensitivity + 4)){
-      mac->SetSf(11);
-    }
-    else{
-      mac->SetSf(12);
-
-    }
-*/
 
 /*
 
@@ -626,8 +800,9 @@ void LoraMacHelper::SetSpreadingFactorsUp (NodeContainer endDevices, NodeContain
 
   
 
-
+    }
   } //  end function
 
 }
 } //end class
+

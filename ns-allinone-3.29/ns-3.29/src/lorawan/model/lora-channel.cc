@@ -27,6 +27,11 @@
 #include "ns3/end-device-lora-phy.h"
 #include "ns3/gateway-lora-phy.h"
 #include <algorithm>
+#include "ns3/lora-phy-helper.h"
+#include "ns3/lora-net-device.h"
+#include "ns3/lora-phy.h"
+
+
 
 namespace ns3 {
 namespace lorawan {
@@ -115,26 +120,56 @@ LoraChannel::Send (Ptr< LoraPhy > sender, Ptr< Packet > packet,
 
   // Get the mobility model of the sender
   Ptr<MobilityModel> senderMobility = sender->GetMobility ()->GetObject<MobilityModel> ();
+  
+  Ptr<LoraChannel> senderChannel = sender->GetChannel();
+  // std::cout << " Sender possui endereço: " << sender << " senderChannel: " << senderChannel << std::endl;
+  // std::cout << " Sender possui channel de tamanho: " << senderChannel->GetNDevices() << std::endl;
+  Ptr<Channel> channel = sender->GetChannel();
+  // LoraPhyHelper phyHelper = LoraPhyHelper ();
+  // phyHelper.SetChannel (channel);
+  // phyHelper.SetChannel (senderChannel);
+  // Ptr<Node> node = endDevices.Get(i);
+  // Ptr<LoraNetDevice> loraNetDevice = node->GetDevice(0)->GetObject<LoraNetDevice>();
+  // Ptr<LoraPhy> phy = loraNetDevice->GetPhy();
+
 
   NS_ASSERT (senderMobility != 0);     // Make sure it's available
 
-  NS_LOG_INFO ("Starting cycle over all " << m_phyList.size () << " PHYs");
+  NS_LOG_INFO ("Starting cycle over all " << m_phyList.size () << " PHYs" << sender->GetChannel() << " channel");
+  // std::cout <<" Starting cycle over all " << m_phyList.size () << " PHYs " << sender->GetChannel() << " channel" << std::endl;
+  // for (i = )
   NS_LOG_INFO ("Sender mobility: " << senderMobility->GetPosition ());
+  // std::cout << "(lora-channel) Sender mobility: " << senderMobility->GetPosition ();
+
+  // uint32_t n = 0;
+  // for (std::vector<Ptr<LoraPhy> > :: const_iterator m = m_phyList.begin (); m != m_phyList.end (); m++, n++)
+  //   {
+  //     Ptr<Channel> channel = m_phyList[n]->GetChannel();
+  //     std::cout << "(lora-channel) channel conteúdo: " << channel << " size: " << m_phyList.size() << " n " << n << std::endl;
+  //   }
 
   // Cycle over all registered PHYs
   uint32_t j = 0;
   std::vector<Ptr<LoraPhy> >::const_iterator i;
   for (i = m_phyList.begin (); i != m_phyList.end (); i++, j++)
     {
+      // std::cout <<" Entrou no for!" << std::endl;
+      // std::cout << "Valor de i: " << *i  << " sender: " << sender << std::endl;
       // Do not deliver to the sender (*i is the current PHY)
+    // Ptr<Channel> channel1 = m_phyList[j]->GetChannel();
+    // std::cout << "(lora-channel) channel1: " << channel1 << " size: " << m_phyList.size() << " j " << j << std::endl;
+
+
       if (sender != (*i))
         {
           // Get the receiver's mobility model
           Ptr<MobilityModel> receiverMobility = (*i)->GetMobility ()->
             GetObject<MobilityModel> ();
-
+          // std::cout << " (lora-channel) i: " << *i << " receiverMobility: " << receiverMobility << std::endl;
           NS_LOG_INFO ("Receiver mobility: " <<
                        receiverMobility->GetPosition ());
+          // std::cout << "(lora-channel) Valor de receiver mobility: " << receiverMobility->GetPosition() << std::endl;
+
 
           // Compute delay using the delay model
           Time delay = m_delay->GetDelay (senderMobility, receiverMobility);
@@ -147,6 +182,10 @@ LoraChannel::Send (Ptr< LoraPhy > sender, Ptr< Packet > packet,
                         "dbm, rxPower=" << rxPowerDbm << "dbm, " <<
                         "distance=" << senderMobility->GetDistanceFrom (receiverMobility) <<
                         "m, delay=" << delay);
+          // std::cout << "Propagation: txPower=" << txPowerDbm <<
+          //               "dbm, rxPower=" << rxPowerDbm << "dbm, " <<
+          //               "distance=" << senderMobility->GetDistanceFrom (receiverMobility) <<
+          //               "m, delay=" << delay << std::endl;
 
           // Get the id of the destination PHY to correctly format the context
           Ptr<NetDevice> dstNetDevice = m_phyList[j]->GetDevice ();
@@ -156,12 +195,13 @@ LoraChannel::Send (Ptr< LoraPhy > sender, Ptr< Packet > packet,
               NS_LOG_INFO ("Getting node index from NetDevice, since it exists");
               dstNode = dstNetDevice->GetNode ()->GetId ();
               NS_LOG_DEBUG ("dstNode = " << dstNode);
+
             }
           else
             {
               NS_LOG_INFO ("No net device connected to the PHY, using context 0");
             }
-
+          // std::cout << "indice j " << j << std::endl;
           // Create the parameters object based on the calculations above
           LoraChannelParameters parameters;
           parameters.rxPowerDbm = rxPowerDbm;
@@ -171,9 +211,12 @@ LoraChannel::Send (Ptr< LoraPhy > sender, Ptr< Packet > packet,
 
           // Schedule the receive event
           NS_LOG_INFO ("Scheduling reception of the packet");
+          // std::cout << "Entrando na recepção do pacote " << packet << "no contexto: " << dstNode << std::endl;
+
           Simulator::ScheduleWithContext (dstNode, delay, &LoraChannel::Receive,
                                           this, j, packet, parameters);
 
+          // std::cout << "antes de m_packetSent" << std::endl;
           // Fire the trace source for sent packet
           m_packetSent (packet);
         }
@@ -185,6 +228,7 @@ LoraChannel::Receive (uint32_t i, Ptr<Packet> packet,
                       LoraChannelParameters parameters) const
 {
   NS_LOG_FUNCTION (this << i << packet << parameters);
+  // std::cout << "this " << this << " i " << i << " packet " << packet << " parameters " << parameters << std::endl;
 
   // Call the appropriate PHY instance to let it begin reception
   m_phyList[i]->StartReceive (packet, parameters.rxPowerDbm, parameters.sf,

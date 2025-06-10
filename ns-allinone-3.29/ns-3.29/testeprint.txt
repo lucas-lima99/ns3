@@ -1,0 +1,2 @@
+RunSeed,Seed,Algoritmo,Radius,nDevices,appPeriodSeconds,simulationTime,PHYTotal,PHYSuccessful,PHYInterfered,PHYNoMoreReceivers,PHYUnderSensitivity,PHYLostBecauseTX,SimulationDuration,targetRealocation
+4167675172,1,9,6000,5000,600,600,4999,2557,880,949,613,0,2.38333,5

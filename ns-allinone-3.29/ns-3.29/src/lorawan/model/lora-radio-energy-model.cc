@@ -133,6 +133,7 @@ void
 LoraRadioEnergyModel::SetTxCurrentA (double txCurrentA)
 {
   NS_LOG_FUNCTION (this << txCurrentA);
+  // std::cout << "(lora-radio-energy-model) txCurrentA" << txCurrentA << std::endl;
   m_txCurrentA = txCurrentA;
 }
 
@@ -204,6 +205,7 @@ LoraRadioEnergyModel::SetTxCurrentModel (Ptr<LoraTxCurrentModel> model)
 void
 LoraRadioEnergyModel::SetTxCurrentFromModel (double txPowerDbm)
 {
+  
   if (m_txCurrentModel)
     {
       m_txCurrentA = m_txCurrentModel->CalcTxCurrent (txPowerDbm);
@@ -219,8 +221,10 @@ LoraRadioEnergyModel::ChangeState (int newState)
   NS_ASSERT (duration.GetNanoSeconds () >= 0);     // check if duration is valid
 
   // energy to decrease = current * voltage * time
-  double energyToDecrease = 0.0;
+  double energyToDecrease = 0.0000;
   double supplyVoltage = m_source->GetSupplyVoltage ();
+
+
   switch (m_currentState)
     {
     case EndDeviceLoraPhy::STANDBY:
@@ -246,7 +250,6 @@ LoraRadioEnergyModel::ChangeState (int newState)
   m_lastUpdateTime = Simulator::Now ();
 
   m_nPendingChangeState++;
-
   // notify energy source
   m_source->UpdateEnergySource ();
 
@@ -265,6 +268,8 @@ LoraRadioEnergyModel::ChangeState (int newState)
       // some debug message
       NS_LOG_DEBUG ("LoraRadioEnergyModel:Total energy consumption is " <<
                     m_totalEnergyConsumption << "J");
+      // std::cout << "LoraRadioEnergyModel:Total energy consumption is " <<
+      //               m_totalEnergyConsumption << "J" << std::endl;                    
     }
 
   m_isSupersededChangeState = (m_nPendingChangeState > 1);
@@ -411,6 +416,7 @@ void
 LoraRadioEnergyModelPhyListener::NotifyTxStart (double txPowerDbm)
 {
   NS_LOG_FUNCTION (this << txPowerDbm);
+  // std::cout << "(lora-radio-energy-model) tx power: " << txPowerDbm << std::endl;
   if (m_updateTxCurrentCallback.IsNull ())
     {
       NS_FATAL_ERROR ("LoraRadioEnergyModelPhyListener:Update tx current callback not set!");

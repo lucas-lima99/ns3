@@ -88,6 +88,7 @@ void
 EndDeviceLoraPhy::SetSpreadingFactor (uint8_t sf)
 {
   m_sf = sf;
+
 }
 
 uint8_t

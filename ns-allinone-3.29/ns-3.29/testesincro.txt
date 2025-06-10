@@ -1,0 +1,6 @@
+RunSeed,Seed,packetSize,N,d,P_0,sigma,Algoritmo,Radius,nDevices,appPeriodsSeconds,batteryVoltage,batteryEnergyInit,hours,TxPowerdBm,PHYTotal,PHYSuccessful,PHYInterfered,PHYNoMoreReceivers,PHYUnderSensitivity,PHYLostBecauseTX,batteryEnergyFinal
+2314927680,1,23,3.78,41,79,0,10,4000,1000,600,3.3,10000,4,6,
+2314927680,1,23,3.78,41,79,0,10,4000,1000,600,3.3,10000,4,6,
+2314927680,1,23,3.78,41,79,0,10,4000,10,600,3.3,10000,1,6,60,25,0,0,35,0,9999.82
+2314927680,1,23,3.78,41,79,0,10,4000,10,600,3.3,10000,1,6,60,35,0,0,25,0,9999.62
+2314927680,1,23,3.78,41,79,0,10,4000,10,600,3.3,10000,1,6,60,33,0,0,27,0,9999.62

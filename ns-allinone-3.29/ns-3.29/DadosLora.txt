@@ -1,0 +1,2 @@
+RunSeed,Seed,Algoritmo,Raio,RaioHotspot,nHotspots,nDevices,simulationTime,PHYTotal,PHYSuccessful,PHYInterfered,PHYNoMoreReceivers,PHYUnderSensitivity,PHYLostBecauseTX,SimulationDuration,targetRealocation
+1,1,6,9000,15,8,1128,14400,13536,13036,484,16,0,0,1.81667,5

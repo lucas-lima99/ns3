@@ -82,15 +82,13 @@ int main (int argc, char *argv[])
 {
 	tic();
 	// Network settings
-	int nDevices = 200;
+	int nDevices = 3000;
 	int nGateways = 1;
 	double radius = 7500;
 	double simulationTime = 600;
 	int seed=1;
 	uint32_t runSeed=1;
-	int algoritmo=4;
-	// For algorithm 7: reallocation in percentage
-	double targetRealocation = 5;
+	int algoritmo=7;
 
 	// Channel model
 	bool realisticChannelModel = false;
@@ -137,12 +135,7 @@ int main (int argc, char *argv[])
 					filename);
 	cmd.AddValue ("algoritmo",
 			"Algoritmo de alocaçao de SF a ser utilizado",
-			algoritmo);
-	cmd.AddValue ("targetRealocation",
-				"Porcentagem de realocação de usuários do SF [%]",
-				targetRealocation);
-
-	//
+			algoritmo);//1-60%80%85%90%95%   2-20%  3-Fixo 7  4-Sensibilidade 5-dividido sensibilidade 6-random
 	cmd.Parse (argc, argv);
 
 	// Set up logging
@@ -201,11 +194,10 @@ int main (int argc, char *argv[])
 				"PHYNoMoreReceivers," <<
 				"PHYUnderSensitivity," <<
 				"PHYLostBecauseTX," <<
-				"SimulationDuration," <<
-				"targetRealocation";
+				"SimulationDuration";
 	}
 
-	myfile << std::endl <<
+	myfile << std::endl<<
 			runSeed << "," <<
 			seed << "," <<
 			algoritmo << "," <<
@@ -222,7 +214,6 @@ int main (int argc, char *argv[])
 			", simulation Time =" << simulationTime << " s" <<
 			", appPeriodSeconds = " << appPeriodSeconds << " s" <<
 			", Algoritmo ADR = " << algoritmo <<
-			", targetRealocation = " << targetRealocation <<
 			", seed = " << seed <<
 			", run stream = " << runSeed <<
 			", outputDir = " << outputDir << std::endl;
@@ -407,8 +398,8 @@ int main (int argc, char *argv[])
 	/**********************************************
 	 *  Set up the end device's spreading factor  *
 	 **********************************************/
-
-	macHelper.SetSpreadingFactorsUp (endDevices, gateways, channel,algoritmo,targetRealocation);
+	int txPowerdBm = 2;
+	macHelper.SetSpreadingFactorsUp (endDevices, gateways, channel,algoritmo, txPowerdBm);
 
 
 	NS_LOG_DEBUG ("Completed configuration");
@@ -482,8 +473,7 @@ int main (int argc, char *argv[])
 	// Display total time to perform simulation
 	//std::cout << "SimDuration: " << simDutation << std::endl;
 	myfile.open (chFilename.c_str(), std::ofstream::app);
-	myfile << simDutation << ",";
-	myfile << targetRealocation;
+	myfile << simDutation;
 	myfile.close ();
 
 

@@ -20,6 +20,7 @@
 
 #include <algorithm>
 #include "ns3/simple-end-device-lora-phy.h"
+#include "ns3/lora-net-device.h"
 #include "ns3/simulator.h"
 #include "ns3/lora-tag.h"
 #include "ns3/log.h"
@@ -72,7 +73,7 @@ SimpleEndDeviceLoraPhy::Send (Ptr<Packet> packet, LoraTxParameters txParams,
 
   // We can send the packet: switch to the TX state
   SwitchToTx (txPowerDbm);
-
+  // std::cout << "(simple-end-device-lora-phy) txPowerDbm: "   << txPowerDbm << std::endl;
   // Tag the packet with information about its Spreading Factor
   LoraTag tag;
   packet->RemovePacketTag (tag);
@@ -81,6 +82,8 @@ SimpleEndDeviceLoraPhy::Send (Ptr<Packet> packet, LoraTxParameters txParams,
 
   // Send the packet over the channel
   NS_LOG_INFO ("Sending the packet in the channel");
+  // Ptr<LoraChannel> multichannel= m_device->GetNode()->GetDevice(0)->GetObject<LoraNetDevice>()->GetPhy()->GetChannel();
+  // std::cout << "(simple-end-device-lora-phy.cc) Canal: " << multichannel << std::endl;
   m_channel->Send (this, packet, txPowerDbm, txParams, duration, frequencyMHz);
 
   // Schedule the switch back to STANDBY mode.

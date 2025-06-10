@@ -118,6 +118,7 @@ SimpleGatewayLoraPhy::StartReceive (Ptr<Packet> packet, double rxPowerDbm,
                                     uint8_t sf, Time duration, double frequencyMHz)
 {
   NS_LOG_FUNCTION (this << packet << rxPowerDbm << duration << frequencyMHz);
+  // std::cout << "está recebendo pacote " << packet << " com duração " << duration << " e potência " << rxPowerDbm << std::endl;
 
   // Fire the trace source
   m_phyRxBeginTrace (packet);
@@ -177,9 +178,11 @@ SimpleGatewayLoraPhy::StartReceive (Ptr<Packet> packet, double rxPowerDbm,
               if (m_device)
                 {
                   m_underSensitivity (packet, m_device->GetNode ()->GetId ());
+                  // std::cout << "Pacote Under sensitivity" << std::endl;
+
                 }
               else
-                {
+                 {
                   m_underSensitivity (packet, 0);
                 }
 

@@ -2,7 +2,7 @@ scenario:
     # Output filename (and part of output dir)
     filename: CampaignLoraWAN2
     # Set location of simulation: local or cluster
-    simLocation: local
+    simLocation: cluster
     # Set campaign scenario: a name of one valid parameter
     #campaign: radius
     # Set campaign scenario: a name of one valid parameter
@@ -15,25 +15,21 @@ scenario:
         - algoritmo
     # Number of jobs to run
     jobs: 10
-    #Number of tasks per script (.sh)
-    ntasks: 8
-    # max simulation time in cluster no formato dias:horas:minutos
-    clustertime: 3-00:00
     # Simulation duration (seconds)
     simulationTime: 600
     # Number of end devices to include in the simulation
     nDevices:
         - 6000
-        - 3000
         - 1000
         - 2000 
+        - 3000
         - 4000
-        - 5000         
+        - 5000
     # The radius of the area to simulate
     radius: 
         - 6000
-        - 3000
         - 2000
+        - 3000
         - 4000
         - 8000
         - 10000
@@ -57,7 +53,7 @@ scenario:
     # Target realocation for Algorithm 7
     targetRealocation:
         - 0
-    # Complete path of ns-3 simulator
-    ns3_path: ./simulations_vicente/
+    # Complete path of ns-3 simulator (no relative path)
+    ns3_path: /home/lucaslima/teste/ns-3-lora-gppcom/ns-allinone-3.29/ns-3.29
     # Script with the main code (inside scratch folder without .cc)
     ns3_script: ADR_code

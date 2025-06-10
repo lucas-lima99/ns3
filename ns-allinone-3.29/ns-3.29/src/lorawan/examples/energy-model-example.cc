@@ -78,7 +78,7 @@ int main (int argc, char *argv[])
 
   MobilityHelper mobility;
   Ptr<ListPositionAllocator> allocator = CreateObject<ListPositionAllocator> ();
-  allocator->Add (Vector (100,0,0));
+  allocator->Add (Vector (0.0, 0.0, 15.0));
   allocator->Add (Vector (0,0,0));
   mobility.SetPositionAllocator (allocator);
   mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
@@ -174,15 +174,16 @@ int main (int argc, char *argv[])
    * Get output *
    **************/
   FileHelper fileHelper;
-  fileHelper.ConfigureFile ("battery-level", FileAggregator::SPACE_SEPARATED);
+  fileHelper.ConfigureFile ("battery-level", FileAggregator::COMMA_SEPARATED);
   fileHelper.WriteProbe ("ns3::DoubleProbe", "/Names/EnergySource/RemainingEnergy", "Output");
 
 
   /****************
   *  Simulation  *
   ****************/
+  Time appStopTime = Seconds(600);
 
-  Simulator::Stop (Hours (24));
+  Simulator::Stop (appStopTime + Hours (1));
 
   Simulator::Run ();
 

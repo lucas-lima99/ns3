@@ -396,6 +396,7 @@ std::ostream&
 operator<< (std::ostream& os, const EndDeviceStatus& status)
 {
   os << "Total packets received: " << status.m_receivedPacketList.size () << std::endl;
+  std::cout << "Total packets received:  em end device status.cc" << status.m_receivedPacketList.size () << std::endl;
 
   for (auto j = status.m_receivedPacketList.begin ();
        j != status.m_receivedPacketList.end ();

@@ -74,17 +74,17 @@ class openSimulation:
         elif algID == '3':
             return "Equal Split (III)"
         elif algID == '4':
-            return "Capacity-enhanced (IV)"
+            return "Proposed for Capacity (IV)"
         elif algID == '5':
-            return "Coverage-enhanced (V)"
+            return "Proposed for Coverage (V)"
         elif algID == '6':
             return "Sensitivity-based (VI)"
         elif algID == '7':
-            return "Sensitivity-based capacity-enhanced (VII)"
+            return "Proposed sensitivity-based for Capacity (VII)"
         elif algID == '8':
-            return "Sensitivity-based coverage-enhanced (VIII)"
+            return "Proposed sensitivity-based for Coverage (VIII)"
         elif algID == '9':
-            return "Random (IX)"
+            return "Random ADR (IX)"
         
     def doLabeltargetRealocation(self, realocRate):
         # Define labels for plots legends
@@ -98,10 +98,11 @@ class openSimulation:
         print(chFile)
         simTime = np.loadtxt(chFile, skiprows=1, usecols=(6, ), delimiter=',', unpack=False)                
         resalgoritmo = np.loadtxt(chFile, skiprows=1, usecols=(2, ), delimiter=',', unpack=False)
-        restargetRealocation = np.loadtxt(chFile, skiprows=1, usecols=(14, ), delimiter=',', unpack=False)
+        #restargetRealocation = np.loadtxt(chFile, skiprows=1, usecols=(14, ), delimiter=',', unpack=False)
         resradius = np.loadtxt(chFile, skiprows=1, usecols=(3, ), delimiter=',', unpack=False)
         resnDevices = np.loadtxt(chFile, skiprows=1, usecols=(4, ), delimiter=',', unpack=False)
         ressimDur = np.loadtxt(chFile, skiprows=1, usecols=(13, ), delimiter=',', unpack=False)
+        #ressimDur = np.loadtxt(chFile, skiprows=1, usecols=(12, ), delimiter=',', unpack=False)
         resphyTotal = np.loadtxt(chFile, skiprows=1, usecols=(7, ), delimiter=',', unpack=False)
         resphySucc = np.loadtxt(chFile, skiprows=1, usecols=(8, ), delimiter=',', unpack=False)
         markers_on_all = cycle(list(itertools.product([0], [1,2,3,4,5])))
@@ -115,7 +116,7 @@ class openSimulation:
         
         #for iAlg in self.algoritmo:
         for curLine in self.doc['scenario'][self.campaignLines]: 
-            m_pdr, m_pdrCI, m_tput, m_tputCI, m_pkt, m_pktCI = [], [], [], [], [], []
+            m_plr, m_plrCI, m_tput, m_tputCI, m_pkt, m_pktCI = [], [], [], [], [], []
             color=next(colors)
             marker=next(markersA)
             line=next(lineA)
@@ -134,14 +135,14 @@ class openSimulation:
                                 
                 if str(curCampaign) == 'radius':
                     #resalgIndexs = (resalg == int(iAlg)) & (resradius == int(varParam))
-                    chtitle = 'number of devices = ' + self.doc['scenario']['nDevices'][0] 
+                    chtitle = 'Settings ('+ self.doc['scenario']['nDevices'][0] +' devices)'
                     xlabel='Distance [m]'
                     #resxData = sorted(self.radius,key=int) 
                     # label = self.doLabel(iAlg)
                 elif str(curCampaign) == 'nDevices':
                 #    resalgIndexs = (resalg == int(iAlg)) & (resnDevices == int(varParam))                    
                     xlabel='Number of Devices'
-                    chtitle = 'radius = '+ self.doc['scenario']['radius'][0] +' m'
+                    chtitle = 'Settings (radius = '+ self.doc['scenario']['radius'][0] +' m)'
                 #    resxData = sorted(self.nDevices,key=int)
                 #    label = self.doLabel(iAlg)
                 elif str(curCampaign) == 'targetRealocation':
@@ -150,34 +151,43 @@ class openSimulation:
                     chtitle = 'Configuração ('+ self.doc['scenario']['nDevices'][0] +' dispositivos, raio = '+ self.doc['scenario']['radius'][0]+')'
                 #    resxData = self.targetRealocation
                                         
-                # Pdr Evaluation
-                if metric=='PDR':                
-                    # Calculate PDR line
-                    pdr = 100*( resphySucc[resalgIndexs]  / resphyTotal[resalgIndexs])
-                    m_pdr = np.append(m_pdr, np.mean(pdr))
+                # Plr Evaluation
+                if metric=='PLR':                
+                    # Calculate PLR line
+                    plr = 8*100*( resphyTotal[resalgIndexs]-resphySucc[resalgIndexs] ) / resphyTotal[resalgIndexs]
+                    m_plr = np.append(m_plr, np.mean(plr))
                     # Confidence interval according to https://stackoverflow.com/questions/15033511/compute-a-confidence-interval-from-sample-data
-                    l, h = st.t.interval(0.95, len(pdr)-1, loc=np.mean(pdr), scale=st.sem(pdr))
-                    #l,h = st.norm.interval(0.95, loc=np.mean(pdr), scale=st.sem(pdr))                                                            
-                    m_pdrCI = np.append(m_pdrCI, h)
+                    l, h = st.t.interval(0.95, len(plr)-1, loc=np.mean(plr), scale=st.sem(plr))
+                    #l,h = st.norm.interval(0.95, loc=np.mean(plr), scale=st.sem(plr))                                                            
+                    m_plrCI = np.append(m_plrCI, h)
                 elif metric=='Tput':
                     # TODO
-                    # Calculate Tput line
-                    tput = 8*23*( resphySucc[resalgIndexs] ) / float(self.simulationTime)
+                    # Calculate PLR line
+                    tput = 23*( resphySucc[resalgIndexs] ) / float(self.simulationTime)
                     m_tput = np.append(m_tput, np.mean(tput))
                     # Confidence interval according to https://stackoverflow.com/questions/15033511/compute-a-confidence-interval-from-sample-data
                     l, h = st.t.interval(0.95, len(tput)-1, loc=np.mean(tput), scale=st.sem(tput))
                     #l,h = st.norm.interval(0.95, loc=np.mean(tput), scale=st.sem(tput))                    
                     m_tputCI = np.append(m_tputCI, h)
-                
+                elif metric=='Pkt':
+                    # TODO
+                    # Calculate PLR line
+                    pkt = 100 * ( resphySucc[resalgIndexs] ) / resphyTotal[resalgIndexs]
+                    m_pkt = np.append(m_pkt, np.mean(pkt))
+                    # Confidence interval according to https://stackoverflow.com/questions/15033511/compute-a-confidence-interval-from-sample-data
+                    l, h = st.t.interval(0.95, len(pkt)-1, loc=np.mean(pkt), scale=st.sem(pkt))
+                    #l,h = st.norm.interval(0.95, loc=np.mean(pkt), scale=st.sem(pkt))                    
+                    m_pktCI = np.append(m_pktCI, h)
+
             alpha = 0.2    
             # Plot line
-            if metric=='PDR':                         
-                #plt.plot(resxData,m_pdr, label=label, marker=marker,color=color,markevery=markers_on)   
-                plt.plot(resxData,m_pdr, label=label, marker=marker,color=color,markevery=markers_on,ls=line,markersize=8.5)   
-                err=(m_pdrCI-m_pdr)
-                plt.fill_between(resxData, (m_pdr-err), (m_pdr+err), alpha=alpha)
+            if metric=='PLR':                         
+                #plt.plot(resxData,m_plr, label=label, marker=marker,color=color,markevery=markers_on)   
+                plt.plot(resxData,m_plr, label=label, marker=marker,color=color,markevery=markers_on,ls=line,markersize=8.5)   
+                err=(m_plrCI-m_plr)
+                plt.fill_between(resxData, (m_plr-err), (m_plr+err), alpha=alpha)
                 #if bool(self.plotCI):
-                    #plt.errorbar(resxData,m_pdr, yerr=(m_pdrCI-m_pdr), color=color, ls = 'none', marker=marker, lw = 2, capthick = 2,markevery=markers_on)
+                    #plt.errorbar(resxData,m_plr, yerr=(m_plrCI-m_plr), color=color, ls = 'none', marker=marker, lw = 2, capthick = 2,markevery=markers_on)
                     
             elif metric=='Tput':
                 # TODO
@@ -188,7 +198,15 @@ class openSimulation:
                 
                 #if bool(self.plotCI):                
                 #    plt.errorbar(resxData,m_tput, yerr = (m_tputCI-m_tput), marker=marker,color=color, ls = 'none', lw = 2, capthick = 2,markevery=markers_on)
-            
+            elif metric=='Pkt':
+                # TODO
+                #plt.plot(resxData,m_pkt, label=label, marker=marker,color=color,markevery=markers_on)    
+                plt.plot(resxData,m_pkt, label=label, marker=marker,color=color,markevery=markers_on,ls=line,markersize=8.5)    
+                err=(m_pktCI-m_pkt)
+                plt.fill_between(resxData, (m_pkt-err), (m_pkt+err), alpha=alpha)
+                
+                #if bool(self.plotCI):                
+                #    plt.errorbar(resxData,m_pkt, yerr = (m_pktCI-m_pkt), marker=marker,color=color, ls = 'none', lw = 2, capthick = 2,markevery=markers_on)
             
         # Plot figure
         params = {'legend.fontsize': 'x-large',
@@ -200,21 +218,28 @@ class openSimulation:
         os.makedirs(outputDir+"/ps", exist_ok=True)
         os.makedirs(outputDir+"/png", exist_ok=True)
         
-        if metric=='PDR':        
-            # Show and save PDR plot
-            ylabel="PDR [%]"
+        if metric=='PLR':        
+            # Show and save PLR plot
+            ylabel="PLR [%]"
             if bool(self.plotCI):
-                imgfilename = 'PDR_CI_'+curCampaign
+                imgfilename = 'PLR_CI_'+curCampaign
             else:
-                imgfilename = 'PDR_'+curCampaign
+                imgfilename = 'PLR_'+curCampaign
         elif metric=='Tput':
-            # Show and save PDR plot
+            # Show and save PLR plot
             ylabel="Throughput [bps]"
             if bool(self.plotCI):
                 imgfilename = 'TPUT_CI_'+curCampaign
             else:
                 imgfilename = 'TPUT_'+curCampaign    
-        
+        elif metric=='Pkt':
+            # Show and save PLR plot
+            ylabel="PDR [%]"
+            if bool(self.plotCI):
+                imgfilename = 'PKT_CI_'+curCampaign
+            else:
+                imgfilename = 'PKT_'+curCampaign    
+
         # Plot general configuration
         nPixels = 500
         plt.xlabel(xlabel)
@@ -233,14 +258,15 @@ class openSimulation:
                     bbox_extra_artists=(lgd,),
                     bbox_inches='tight')
                    
-        #plt.savefig(outputDir+"/ps/"+imgfilename+".eps")
-        #if bool(self.showPlot):
-        #    plt.show()
-        #else:
-        #    plt.close()
+        plt.savefig(outputDir+"/ps/"+imgfilename+".eps")
+        if bool(self.showPlot):
+            plt.show()
+        else:
+            plt.close()
                 
                
         
+                
 parser = argparse.ArgumentParser()
 parser.add_argument("-f", "--file", type=str, help='Configuration File')
 args = parser.parse_args()
@@ -256,9 +282,10 @@ campaign = doc['scenario']['campaignX']
 print(campaign)
                  
 simu = openSimulation(configurations_file)
-for iMet in ['PDR', 'Tput']:
+for iMet in ['PLR', 'Tput', 'Pkt']:
     for simC in campaign:
-        if str(simC) == 'nDevices' or str(simC) == 'radius' or str(simC) == 'targetRealocation':
+        #if str(simC) == 'nDevices' or str(simC) == 'radius' or str(simC) == 'targetRealocation':
+        if str(simC) == 'nDevices' or str(simC) == 'radius':
             simu.plotCampaign(simC,iMet);
         else:
             print('Invalid simulation campaign: verify the campaign parameter!')

@@ -542,6 +542,114 @@ LogDistancePropagationLossModel::DoAssignStreams (int64_t stream)
 
 // ------------------------------------------------------------------------- //
 
+NS_OBJECT_ENSURE_REGISTERED (LogDistanceGaussianDistributionPropagationLossModel);
+
+TypeId
+LogDistanceGaussianDistributionPropagationLossModel::GetTypeId (void)
+{
+  static TypeId tid = TypeId ("ns3::LogDistanceGaussianDistributionPropagationLossModel")
+    .SetParent<PropagationLossModel> ()
+    .SetGroupName ("Propagation")
+    .AddConstructor<LogDistanceGaussianDistributionPropagationLossModel> ()
+    .AddAttribute ("Exponent",
+                   "The exponent of the Path Loss propagation model",
+                   DoubleValue (3.0),
+                   MakeDoubleAccessor (&LogDistanceGaussianDistributionPropagationLossModel::m_exponent),
+                   MakeDoubleChecker<double> ())
+    .AddAttribute ("ReferenceDistance",
+                   "The distance at which the reference loss is calculated (m)",
+                   DoubleValue (1.0),
+                   MakeDoubleAccessor (&LogDistanceGaussianDistributionPropagationLossModel::m_referenceDistance),
+                   MakeDoubleChecker<double> ())
+    .AddAttribute ("ReferenceLoss",
+                   "The reference loss at reference distance (dB). (Default is Friis at 1m with 5.15 GHz)",
+                   DoubleValue (46.6777),
+                   MakeDoubleAccessor (&LogDistanceGaussianDistributionPropagationLossModel::m_referenceLoss),
+                   MakeDoubleChecker<double> ())
+	.AddAttribute ("GaussianValue",
+					"Valor da variável aleatória gaussiana incluindo variância",
+					DoubleValue (0.00),
+					MakeDoubleAccessor (&LogDistanceGaussianDistributionPropagationLossModel::m_gaussian),
+					MakeDoubleChecker<double> ())
+  ;
+  return tid;
+
+}
+
+LogDistanceGaussianDistributionPropagationLossModel::LogDistanceGaussianDistributionPropagationLossModel ()
+{
+}
+
+void
+LogDistanceGaussianDistributionPropagationLossModel::SetPathLossExponent (double n)
+{
+  m_exponent = n;
+}
+void
+LogDistanceGaussianDistributionPropagationLossModel::SetReference (double referenceDistance, double referenceLoss)
+{
+  m_referenceDistance = referenceDistance;
+  m_referenceLoss = referenceLoss;
+}
+double
+LogDistanceGaussianDistributionPropagationLossModel::GetPathLossExponent (void) const
+{
+  return m_exponent;
+}
+
+void
+LogDistanceGaussianDistributionPropagationLossModel::SetGaussianVariable (double gaussianValue)
+{
+	m_gaussian = gaussianValue;
+}
+
+double
+LogDistanceGaussianDistributionPropagationLossModel::GetGaussianVariable (void) const
+{
+	return m_gaussian;
+}
+
+double
+LogDistanceGaussianDistributionPropagationLossModel::DoCalcRxPower (double txPowerDbm,
+                                                Ptr<MobilityModel> a,
+                                                Ptr<MobilityModel> b) const
+{
+  double distance = a->GetDistanceFrom (b);
+  if (distance <= m_referenceDistance)
+    {
+      return txPowerDbm - m_referenceLoss;
+    }
+  /**
+   * The formula is:
+   * rx = 10 * log (Pr0(tx)) - n * 10 * log (d/d0)
+   *
+   * Pr0: rx power at reference distance d0 (W)
+   * d0: reference distance: 1.0 (m)
+   * d: distance (m)
+   * tx: tx power (dB)
+   * rx: dB
+   *
+   * Which, in our case is:
+   *
+   * rx = rx0(tx) - 10 * n * log (d/d0)
+   */
+  double pathLossDb = 10 * m_exponent * std::log10 (distance / m_referenceDistance);
+  double rxc = -m_referenceLoss - pathLossDb - m_gaussian;
+  NS_LOG_DEBUG ("distance="<<distance<<"m, reference-attenuation="<< -m_referenceLoss<<"dB, "<<
+                "attenuation coefficient="<<rxc<<"db");
+  return txPowerDbm + rxc;
+}
+
+int64_t
+LogDistanceGaussianDistributionPropagationLossModel::DoAssignStreams (int64_t stream)
+{
+  return 0;
+}
+
+
+// -------------------------------------- //
+
+
 NS_OBJECT_ENSURE_REGISTERED (ThreeLogDistancePropagationLossModel);
 
 TypeId
